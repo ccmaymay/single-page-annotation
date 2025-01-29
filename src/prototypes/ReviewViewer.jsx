@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Typography } from "@mui/material";
 import Divider from "@mui/material/Divider";
 import Box from "@mui/material/Box";
@@ -15,7 +15,11 @@ function ReviewerViewer(props) {
         theme,
         payload,
         hoverWeakness,
+        weaknessText,
+        setWeaknessText,
     } = props;
+
+    const hoverWeaknessIsValid = hoverWeakness != -1 && hoverWeakness < payload.response["Weakness associated with claims"].length;
 
     const parentRef = useRef(null);
 
@@ -24,29 +28,23 @@ function ReviewerViewer(props) {
     let review_regex = /Review: (.*)/s;
     let review = payload.meta.review.replace(/\s+/g, ' ');
     review = review.match(review_regex)[1];
-    if (hoverWeakness != -1 && hoverWeakness < payload.response["Weakness associated with claims"].length) {
-        console.log(payload.response["Weakness associated with claims"][hoverWeakness]['Weakness span']);
+    if (hoverWeaknessIsValid) {
+        console.log(weaknessText);
     }
-    const reviewTokens = review.split(/\s+/);
+    const reviewTokens = review.split(' ');
 
-    // TODO:  To illustrate usage, we create state in this component for a single weakness span
-    // and pass that to SelectableTextBlock.  To finish integrating SelectableTextBlock with the
-    // rest of the interface, we should get (and set) state from the parent component, Interface,
-    // allowing for multiple independent weakness spans.
-    const selection = (hoverWeakness == -1 || hoverWeakness >= payload.response["Weakness associated with claims"].length)
-        ? null
-        : payload.response["Weakness associated with claims"][hoverWeakness]['Weakness span'].replace(/\s+/g, ' ');
+    const selection = hoverWeaknessIsValid
+        ? weaknessText.replace(/\s+/g, ' ')
+        : null;
     const selectionTokens = selection !== null
-        ? selection.split(/s+/)
+        ? selection.split(' ')
         : null;
     const selectionIndices = selectionTokens
         ? findSubArray(reviewTokens, selectionTokens)
         : null;
-    const [selectedTokenSpan, setSelectedTokenSpan] = useState(
-        selectionIndices
+    const selectedTokenSpan = selectionIndices
         ? [selectionIndices[0], selectionIndices[1] - 1]  // selectedTokenSpan end index is inclusive
-        : null
-    );
+        : null;
 
     return <NormalCard sx={{
         margin: "30px",
@@ -58,9 +56,21 @@ function ReviewerViewer(props) {
         }}
             ref={parentRef}
         >
-            <SelectableTextBlock prefix="Review: " tokens={reviewTokens} selectedTokenSpan={selectedTokenSpan} onSelect={(span, tokens, text) => setSelectedTokenSpan(span)} parentRef={parentRef} bColor={
-                (hoverWeakness == -1 || hoverWeakness >= payload.response["Weakness associated with claims"].length) ? theme.palette["card-bg-emph"].main : candidateColorList[hoverWeakness % candidateColorList.length]
-            } />
+            <SelectableTextBlock
+                prefix="Review: "
+                tokens={reviewTokens}
+                disabled={!hoverWeaknessIsValid}
+                selectedTokenSpan={selectedTokenSpan}
+                onSelect={(span, tokens, text) => {if (hoverWeaknessIsValid) {
+                    setWeaknessText(text);
+                }}}
+                parentRef={parentRef}
+                bColor={
+                    hoverWeaknessIsValid
+                    ? candidateColorList[hoverWeakness % candidateColorList.length]
+                    : theme.palette["card-bg-emph"].main
+                }
+                />
         </Box>
     </NormalCard>
 }

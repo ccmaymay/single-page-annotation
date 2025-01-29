@@ -70,6 +70,9 @@ function Interface(props) {
         new Array(numberOfWeaknesses).fill(null).map(() => (""))
     );
     const [weaknessIndex, setWeaknessIndex] = useState(0);
+    const [weaknessText, setWeaknessText] = useState(
+        payload.response['Weakness associated with claims'].map((weakness) => weakness['Weakness span'])
+    );
     const [secondarySelection, setSecondarySelection] = useState(
         new Array(payload.response['Weakness associated with claims'].length
         ).fill(null).map(() => new Set())
@@ -123,6 +126,14 @@ function Interface(props) {
         }
     }
 
+    const setWeaknessTextFactory = (claimIndex) => {
+        return (value) => {
+            let newWeaknessText = [...weaknessText];
+            newWeaknessText[claimIndex] = value;
+            setWeaknessText(newWeaknessText);
+        }
+    }
+
     const setClaimTypeFactory = (claimIndex) => {
         return (value) => {
             let newClaimTypes = [...claimTypes];
@@ -158,7 +169,12 @@ function Interface(props) {
                 <Grid container spacing={2}>
                     <Grid item xs={6}>
                         <AbstractViewer payload={payload} />
-                        <ReviewerViewer payload={payload} hoverWeakness={hoverWeakness} theme={theme} />
+                        <ReviewerViewer
+                            payload={payload}
+                            hoverWeakness={hoverWeakness}
+                            weaknessText={hoverWeakness != -1 ? weaknessText[hoverWeakness] : null}
+                            setWeaknessText={hoverWeakness != -1 ? setWeaknessTextFactory(hoverWeakness) : (() => {})}
+                            theme={theme} />
                     </Grid>
                     <Grid item xs={6}>
                         {(claimIndex >= payload.meta.claims.length && weaknessIndex >= numberOfWeaknesses ) ? <SubmitPage 
